@@ -1,6 +1,9 @@
 ﻿@page "/"
+@rendermode InteractiveServer
 @inject Dbf25TeamTnrContext context
 <PageTitle>Home</PageTitle>
-@customer.Customername 
-@customer.Phonenumber 
-@customer.Email 
+@foreach(Customer customer in context.Customers)
+{
+    <CustomerView customer=@customer></CustomerView>
+}
+<button @onclick="add100customers">click me</button>

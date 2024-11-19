@@ -6,12 +6,16 @@ namespace databaseproj2.Components.Pages
     public partial class Home
     {
         static Random rnd = new Random();
-        Customer customer = randomCustomer();
         
-        public void add100customers()
+        public async Task add100customers()
         {
-            
+            for (int i = 0; i < 100; i++)
+            {
+                context.Customers.Add(randomCustomer());
+            }
+            context.SaveChanges();
         }
+        
         public static Customer randomCustomer()
         {
             var first = listsStuff.firstNames[rnd.Next(listsStuff.firstNames.Length)];
