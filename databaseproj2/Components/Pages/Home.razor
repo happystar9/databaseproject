@@ -2,8 +2,8 @@
 @rendermode InteractiveServer
 @inject Dbf25TeamTnrContext context
 <PageTitle>Home</PageTitle>
-@foreach(Customer customer in context.Customers)
+@foreach(Staff staff in context.Staff)
 {
-    <CustomerView customer=@customer></CustomerView>
+    <StaffView Staff=@staff></StaffView>
 }
-<button @onclick="add100customers">click me</button>
+<button @onclick="add100staff">click me</button>
