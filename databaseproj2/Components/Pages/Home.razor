@@ -1,9 +1,7 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @inject Dbf25TeamTnrContext context
+@inject ILogger<Home> logger;
 <PageTitle>Home</PageTitle>
-@foreach(Staff staff in context.Staff)
-{
-    <StaffView Staff=@staff></StaffView>
-}
-<button @onclick="add100staff">click me</button>
+
+<button @onclick="generateData">click for rooms</button>

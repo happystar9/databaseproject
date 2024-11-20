@@ -1,6 +1,8 @@
 ﻿using databaseproj2.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Xml;
 
 namespace databaseproj2.Components.Pages
 {
@@ -8,14 +10,70 @@ namespace databaseproj2.Components.Pages
     {
         static Random rnd = new Random();
         static string randphone { get { return "+1(" + rnd.Next(100, 1000) + ") " + rnd.Next(100, 1000) + "-" + rnd.Next(1000, 10000); } }
-        DateOnly runningDate { get; set; }
-        public async Task generateData(int iterations = 100)
+        DateOnly runningDate { get; set; } = DateOnly.Parse("11/19/1975");
+        public async Task generateData()
         {
-            for(int x = 0; x<iterations; x++)
+            var customers =  await context.Customers.ToArrayAsync();
+            var staff = await context.Staff.ToArrayAsync();
+            var types = await context.Roomtypes.ToArrayAsync();
+            var rooms = await context.Rentalrooms.GroupBy(x => x.Room).Select(x => x.OrderByDescending(a=>a.Checkoutdate).First()).ToArrayAsync();
+            logger.LogInformation(rooms.ToString());
+            Dictionary<Room, DateOnly?> roomtoend = new Dictionary<Room, DateOnly?>();
+            
+            for(int x = 0; x<100; x++)
             {
-                var roomsReady = await context.CleanedAndReadies.ToArrayAsync();
-
+                var start = runningDate.AddDays(x);
+                var end = runningDate.AddDays(x+rnd.Next(4));
+                var type = types[rnd.Next(types.Length)];
+                var reservation = new Reservation() { Costomer = customers[rnd.Next(customers.Length)], Roomtype = type, Enddate = end, Startdate = start, Staff = staff[rnd.Next(staff.Length)] };
+                var rental = new Rental() {ReservationNavigation =  reservation, Checkin = start, Roomtype = reservation.Roomtype};
+                context.Reservations.Add(reservation);
+                context.Rentals.Add(rental);
+                var readyRooms =  await context.Rooms.ToArrayAsync();
+                var onDateRooms = new List<Room>();
+                foreach (Room sa in readyRooms)
+                {
+                    if (roomtoend.ContainsKey(sa))
+                    {
+                        if (start > roomtoend[sa]&&sa.Roomtype==type)
+                            onDateRooms.Add(sa);
+                    }
+                else onDateRooms.Add(sa);
+                }
+                var room = onDateRooms[rnd.Next(onDateRooms.Count-1)];
+                roomtoend[room]=end;
+                var reroom = new Rentalroom() { Room = readyRooms[rnd.Next(readyRooms.Length)], Checkoutdate = end, Nightlyprice = 100, Rental = rental, Staff = staff[rnd.Next(staff.Length)] };
+                rental.Rentalrooms.Add(reroom);
+                var payment = new Payment() {Staff = staff[rnd.Next(staff.Length)], Amountpaid =  reroom.Nightlyprice*(reroom.Checkoutdate.Value.DayNumber - reroom.Rental.Checkin.DayNumber),
+                Rental = rental, Paymentdate = start};
+                context.Cleanings.Add(new Cleaning() {Foroccupancy = true, Datecleaned = end, Room=room, Staff = staff[rnd.Next(staff.Length)]});
             }
+            context.SaveChanges();
+        }
+        public async Task add100Rooms()
+        {
+            int roomNumber = 109;  // Starting room number
+            for (int i = 0; i < 100; i++)
+            {
+                if (roomNumber > 209) roomNumber = 109;
+
+                var newRoom = randomRoom(roomNumber);
+                context.Rooms.Add(newRoom);
+
+                roomNumber++;
+            }
+            context.SaveChanges();
+        }
+        public static Room randomRoom(int roomNumber)
+        {
+            var roomTypes = new[] { 1, 2, 3 };
+            var roomTypeId = roomTypes[rnd.Next(roomTypes.Length)];
+
+            return new Room()
+            {
+                Roomnumber = roomNumber.ToString(),
+                Roomtypeid = roomTypeId
+            };
         }
         public async Task add100customers()
         {
