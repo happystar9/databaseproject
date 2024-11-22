@@ -10,17 +10,17 @@ namespace databaseproj2.Components.Pages
     {
         static Random rnd = new Random();
         static string randphone { get { return "+1(" + rnd.Next(100, 1000) + ") " + rnd.Next(100, 1000) + "-" + rnd.Next(1000, 10000); } }
+        DateOnly runningDate { get; set; } = DateOnly.Parse("11/19/1975");
         public async Task generateData()
         {
-        DateOnly runningDate  = DateOnly.Parse("11/19/1975");
             var customers =  await context.Customers.ToArrayAsync();
             var staff = await context.Staff.ToArrayAsync();
             var types = await context.Roomtypes.ToArrayAsync();
             var rooms = await context.Rentalrooms.GroupBy(x => x.Room).Select(x => x.OrderByDescending(a=>a.Checkoutdate).First()).ToArrayAsync();
             logger.LogInformation(rooms.ToString());
             Dictionary<Room, DateOnly?> roomtoend = new Dictionary<Room, DateOnly?>();
-
-            for (int x = 0; x < 500000; x++)
+            
+            for(int x = 0; x<100; x++)
             {
                 var start = runningDate.AddDays(x);
                 var end = runningDate.AddDays(x+rnd.Next(4));
@@ -42,12 +42,11 @@ namespace databaseproj2.Components.Pages
                 }
                 var room = onDateRooms[rnd.Next(onDateRooms.Count-1)];
                 roomtoend[room]=end;
-                var reroom = new Rentalroom() { Room = room, Checkoutdate = end, Nightlyprice = rnd.Next(100,300), Rental = rental, Staff = staff[rnd.Next(staff.Length)] };
+                var reroom = new Rentalroom() { Room = readyRooms[rnd.Next(readyRooms.Length)], Checkoutdate = end, Nightlyprice = 100, Rental = rental, Staff = staff[rnd.Next(staff.Length)] };
                 rental.Rentalrooms.Add(reroom);
                 var payment = new Payment() {Staff = staff[rnd.Next(staff.Length)], Amountpaid =  reroom.Nightlyprice*(reroom.Checkoutdate.Value.DayNumber - reroom.Rental.Checkin.DayNumber),
                 Rental = rental, Paymentdate = start};
-                context.Payments.Add(payment);
-                context.Cleanings.Add(new Cleaning() {Foroccupancy = true, Datecleaned = start, Room=room, Staff = staff[rnd.Next(staff.Length)]});
+                context.Cleanings.Add(new Cleaning() {Foroccupancy = true, Datecleaned = end, Room=room, Staff = staff[rnd.Next(staff.Length)]});
             }
             context.SaveChanges();
         }
