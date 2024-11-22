@@ -19,8 +19,9 @@ namespace databaseproj2.Components.Pages
             var rooms = await context.Rentalrooms.GroupBy(x => x.Room).Select(x => x.OrderByDescending(a=>a.Checkoutdate).First()).ToArrayAsync();
             logger.LogInformation(rooms.ToString());
             Dictionary<Room, DateOnly?> roomtoend = new Dictionary<Room, DateOnly?>();
+            var readyRooms =  await context.Rooms.ToArrayAsync();
             
-            for(int x = 0; x<100; x++)
+            for(int x = 0; x<1000; x++)
             {
                 var start = runningDate.AddDays(x);
                 var end = runningDate.AddDays(x+rnd.Next(4));
@@ -29,7 +30,6 @@ namespace databaseproj2.Components.Pages
                 var rental = new Rental() {ReservationNavigation =  reservation, Checkin = start, Roomtype = reservation.Roomtype};
                 context.Reservations.Add(reservation);
                 context.Rentals.Add(rental);
-                var readyRooms =  await context.Rooms.ToArrayAsync();
                 var onDateRooms = new List<Room>();
                 foreach (Room sa in readyRooms)
                 {
