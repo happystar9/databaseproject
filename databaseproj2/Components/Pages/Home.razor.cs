@@ -10,7 +10,7 @@ namespace databaseproj2.Components.Pages
     {
         static Random rnd = new Random();
         static string randphone { get { return "+1(" + rnd.Next(100, 1000) + ") " + rnd.Next(100, 1000) + "-" + rnd.Next(1000, 10000); } }
-        DateOnly runningDate { get; set; } = DateOnly.Parse("11/19/1975");
+        DateOnly runningDate { get; set; } = DateOnly.Parse("11/19/1985");
         public async Task generateData()
         {
             var customers =  await context.Customers.ToArrayAsync();
@@ -20,15 +20,23 @@ namespace databaseproj2.Components.Pages
             logger.LogInformation(rooms.ToString());
             Dictionary<Room, DateOnly?> roomtoend = new Dictionary<Room, DateOnly?>();
             var readyRooms =  await context.Rooms.ToArrayAsync();
-            
-            for(int x = 0; x<1000; x++)
+            for (int y = 0; y < 5000; y++)
             {
-                var start = runningDate.AddDays(x);
+                var rentals = new Rental[1000];
+                var starts = new DateOnly[1000];
+                var ends = new DateOnly[1000];
+                var roomy = new Room[1000];
+            for(int x = 0; x<100; x++)
+            {
+                var start = runningDate.AddDays(x+(y*1000));
+                    starts[x] = start;
                 var end = runningDate.AddDays(x+rnd.Next(4));
+                    ends[x] = end;
                 var type = types[rnd.Next(types.Length)];
                 var reservation = new Reservation() { Costomer = customers[rnd.Next(customers.Length)], Roomtype = type, Enddate = end, Startdate = start, Staff = staff[rnd.Next(staff.Length)] };
                 var rental = new Rental() {ReservationNavigation =  reservation, Checkin = start, Roomtype = reservation.Roomtype};
-                context.Reservations.Add(reservation);
+                rentals[x] = rental;
+                    context.Reservations.Add(reservation);
                 context.Rentals.Add(rental);
                 var onDateRooms = new List<Room>();
                 foreach (Room sa in readyRooms)
@@ -41,19 +49,31 @@ namespace databaseproj2.Components.Pages
                 else onDateRooms.Add(sa);
                 }
                 var room = onDateRooms[rnd.Next(onDateRooms.Count-1)];
+                    roomy[x]= room;
                 roomtoend[room]=end;
-                var reroom = new Rentalroom() { Room = readyRooms[rnd.Next(readyRooms.Length)], Checkoutdate = end, Nightlyprice = 100, Rental = rental, Staff = staff[rnd.Next(staff.Length)] };
-                rental.Rentalrooms.Add(reroom);
-                var payment = new Payment() {Staff = staff[rnd.Next(staff.Length)], Amountpaid =  reroom.Nightlyprice*(reroom.Checkoutdate.Value.DayNumber - reroom.Rental.Checkin.DayNumber),
-                Rental = rental, Paymentdate = start};
                 context.Cleanings.Add(new Cleaning() {Foroccupancy = true, Datecleaned = end, Room=room, Staff = staff[rnd.Next(staff.Length)]});
             }
-            context.SaveChanges();
+            await context.SaveChangesAsync();
+            for(int x =  0; x < 1000; x++)
+                {
+                    var room = roomy[x];
+                    var rental = rentals[x];
+                    var start = starts[x];
+                    var end = ends[x];
+                var reroom = new Rentalroom() { Room = readyRooms[rnd.Next(readyRooms.Length)], Checkoutdate = end, Nightlyprice = 100, Rental = rental, Staff = staff[rnd.Next(staff.Length)] };
+                var payment = new Payment() { Staff = staff[rnd.Next(staff.Length)], Amountpaid = reroom.Nightlyprice * (reroom.Checkoutdate.Value.DayNumber - reroom.Rental.Checkin.DayNumber),
+                Rental = rental, Paymentdate = start};
+                    rental.Rentalrooms.Add(reroom);
+                    context.Payments.Add(payment);
+                }
+                await context.SaveChangesAsync();
+
+            }
         }
         public async Task add100Rooms()
         {
             int roomNumber = 109;  // Starting room number
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 500000; i++)
             {
                 if (roomNumber > 209) roomNumber = 109;
 
